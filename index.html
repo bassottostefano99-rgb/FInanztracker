@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>Pocketwatcher Mobile</title>
+  <meta name="theme-color" content="#07070f"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Pocketwatcher"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icon.png"/>
+  <link rel="icon" type="image/png" href="icon.png"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; background: #07070f; color: #fff; font-family: -apple-system, 'Plus Jakarta Sans', 'Segoe UI', sans-serif; overflow: hidden; }
+    #root { height: 100%; display: flex; flex-direction: column; }
+    input, select, textarea { font-size: 16px !important; /* prevent iOS zoom */ }
+    ::-webkit-scrollbar { width: 0; }
+    button { -webkit-appearance: none; appearance: none; border: none; cursor: pointer; font-family: inherit; }
+    .no-select { -webkit-user-select: none; user-select: none; }
+    .tab-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; display: flex; background: rgba(10,10,20,0.96); border-top: 1px solid rgba(255,255,255,0.07); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding-bottom: env(safe-area-inset-bottom); }
+    .bottom-nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 4px 12px; gap: 3px; border: none; background: transparent; color: rgba(255,255,255,0.35); font-size: 10px; font-weight: 600; letter-spacing: 0.02em; transition: color 0.2s; }
+    .bottom-nav-btn.active { color: #6366f1; }
+    .bottom-nav-btn .nav-icon { font-size: 22px; line-height: 1; }
+    .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; margin: 0 12px 12px; }
+    .card-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+    .pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .btn-primary { background: #6366f1; color: #fff; border-radius: 10px; padding: 10px 18px; font-size: 14px; font-weight: 700; border: none; cursor: pointer; }
+    .btn-ghost { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5); border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600; border: 1px solid rgba(255,255,255,0.08); cursor: pointer; }
+    .inp { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-size: 16px; padding: 10px 12px; outline: none; width: 100%; transition: border-color 0.2s; }
+    .inp:focus { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.06); }
+    .inp::placeholder { color: rgba(255,255,255,0.2); }
+    .row { display: flex; align-items: center; gap: 8px; }
+    .fab { position: fixed; right: 20px; bottom: calc(88px + env(safe-area-inset-bottom)); width: 52px; height: 52px; border-radius: 50%; background: #6366f1; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 20px rgba(99,102,241,0.4); z-index: 99; transition: transform 0.2s, box-shadow 0.2s; }
+    .fab:active { transform: scale(0.93); }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; display: flex; align-items: flex-end; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+    .modal-sheet { background: #0d0d1c; border-radius: 20px 20px 0 0; border-top: 1px solid rgba(255,255,255,0.1); width: 100%; max-height: 90vh; overflow-y: auto; padding: 20px 16px calc(24px + env(safe-area-inset-bottom)); }
+    .modal-handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); margin: 0 auto 20px; }
+    .section-header { padding: 16px 16px 8px; font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.25); text-transform: uppercase; letter-spacing: 0.08em; }
+    .list-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .list-item:last-child { border-bottom: none; }
+    .badge { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 9px; font-size: 16px; flex-shrink: 0; }
+    .progress-bar-bg { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px solid; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.25s ease forwards; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .slide-up { animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+    .header { position: sticky; top: 0; z-index: 90; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; padding-top: calc(12px + env(safe-area-inset-top)); background: rgba(7,7,15,0.95); border-bottom: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+    .delete-btn { background: transparent; border: none; color: rgba(255,100,100,0.4); font-size: 18px; padding: 6px; cursor: pointer; border-radius: 8px; line-height: 1; flex-shrink: 0; }
+    .delete-btn:active { background: rgba(239,68,68,0.12); color: #f87171; }
+    .num-inp { background: transparent; border: none; color: inherit; font-size: 15px; font-weight: 700; text-align: right; outline: none; width: 80px; font-variant-numeric: tabular-nums; }
+    .num-inp::placeholder { color: rgba(255,255,255,0.15); }
+    select.inp { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255,255,255,0.3)' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+    .glow-text { background: linear-gradient(135deg, #a5b4fc, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stat-card { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 12px 14px; min-width: 0; }
+    .circle-container { position: relative; display: flex; align-items: center; justify-content: center; }
+    .swipe-hint { text-align: center; padding: 4px 0 8px; font-size: 11px; color: rgba(255,255,255,0.2); }
+    .collapsible-toggle { background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 18px; line-height: 1; cursor: pointer; padding: 4px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// ─── Konstanten ───────────────────────────────────────────────────────────────
+const MONATE = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+const FREQ_OPTIONEN = [
+  { id:"monatlich",     label:"Monatlich",    short:"mtl." },
+  { id:"einmalig",      label:"Einmalig",      short:"1×"  },
+  { id:"quartalsweise", label:"Quartalsweise", short:"Q"   },
+  { id:"jährlich",      label:"Jährlich",      short:"p.a." },
+];
+const AUSGABEN_KAT = [
+  { name:"Wohnen",       farbe:"#6366f1", icon:"🏠" },
+  { name:"Lebensmittel", farbe:"#f59e0b", icon:"🛒" },
+  { name:"Auto",         farbe:"#10b981", icon:"🚗" },
+  { name:"Software",     farbe:"#ec4899", icon:"💻" },
+  { name:"Freizeit",     farbe:"#f97316", icon:"🎭" },
+  { name:"Trading",      farbe:"#06b6d4", icon:"📈" },
+  { name:"Sparen",       farbe:"#a78bfa", icon:"🏦" },
+  { name:"Sonstiges",    farbe:"#94a3b8", icon:"📦" },
+];
+const COIN_LIST = [
+  { id:"bitcoin",           symbol:"BTC",   name:"Bitcoin",         farbe:"#f59e0b", icon:"₿"  },
+  { id:"ethereum",          symbol:"ETH",   name:"Ethereum",        farbe:"#6366f1", icon:"Ξ"  },
+  { id:"solana",            symbol:"SOL",   name:"Solana",          farbe:"#9945ff", icon:"◎"  },
+  { id:"binancecoin",       symbol:"BNB",   name:"BNB",             farbe:"#f0b90b", icon:"🔶" },
+  { id:"ripple",            symbol:"XRP",   name:"XRP",             farbe:"#00aae4", icon:"✕"  },
+  { id:"cardano",           symbol:"ADA",   name:"Cardano",         farbe:"#0096ff", icon:"₳"  },
+  { id:"avalanche-2",       symbol:"AVAX",  name:"Avalanche",       farbe:"#e84142", icon:"🔺" },
+  { id:"chainlink",         symbol:"LINK",  name:"Chainlink",       farbe:"#2a5ada", icon:"⬡"  },
+  { id:"polkadot",          symbol:"DOT",   name:"Polkadot",        farbe:"#e6007a", icon:"●"  },
+  { id:"dogecoin",          symbol:"DOGE",  name:"Dogecoin",        farbe:"#c2a633", icon:"Ð"  },
+  { id:"shiba-inu",         symbol:"SHIB",  name:"Shiba Inu",       farbe:"#ff6b00", icon:"🐕" },
+  { id:"matic-network",     symbol:"MATIC", name:"Polygon",         farbe:"#8247e5", icon:"⬡"  },
+  { id:"tron",              symbol:"TRX",   name:"TRON",            farbe:"#ff060a", icon:"◈"  },
+  { id:"litecoin",          symbol:"LTC",   name:"Litecoin",        farbe:"#bfbbbb", icon:"Ł"  },
+  { id:"pepe",              symbol:"PEPE",  name:"Pepe",            farbe:"#4caf50", icon:"🐸" },
+  { id:"near",              symbol:"NEAR",  name:"NEAR Protocol",   farbe:"#00ec97", icon:"Ν"  },
+  { id:"fantom",            symbol:"FTM",   name:"Fantom",          farbe:"#1969ff", icon:"👻" },
+  { id:"sui",               symbol:"SUI",   name:"Sui",             farbe:"#6fbcf0", icon:"💧" },
+  { id:"arbitrum",          symbol:"ARB",   name:"Arbitrum",        farbe:"#213147", icon:"⭔"  },
+  { id:"optimism",          symbol:"OP",    name:"Optimism",        farbe:"#ff0420", icon:"⊕"  },
+];
+const INIT_EINNAHMEN = [
+  { id:1, name:"Lohn",        betrag:0, freq:"monatlich" },
+  { id:2, name:"Zuschläge",   betrag:0, freq:"monatlich" },
+  { id:3, name:"Urlaubsgeld", betrag:0, freq:"jährlich"  },
+  { id:4, name:"Krypto",      betrag:0, freq:"monatlich" },
+  { id:5, name:"Trinkgeld",   betrag:0, freq:"monatlich" },
+];
+const INIT_AUSGABEN = {
+  Wohnen:       [{id:101,name:"Miete",betrag:0},{id:102,name:"GEZ",betrag:0},{id:103,name:"Strom",betrag:0},{id:104,name:"Internet / Telefon",betrag:0},{id:105,name:"Stellplatz",betrag:0}],
+  Lebensmittel: [{id:201,name:"Lebensmittel",betrag:0},{id:202,name:"Hygiene Artikel",betrag:0},{id:203,name:"Kleidung",betrag:0}],
+  Auto:         [{id:301,name:"Auto Finanzierung",betrag:0},{id:302,name:"Versicherung",betrag:0},{id:303,name:"Tanken",betrag:0},{id:304,name:"Wartung",betrag:0}],
+  Software:     [{id:401,name:"Midjourney",betrag:0},{id:402,name:"Photoshop",betrag:0},{id:403,name:"ChatGPT",betrag:0},{id:404,name:"Google Drive",betrag:0},{id:405,name:"YouTube Premium",betrag:0}],
+  Freizeit:     [{id:501,name:"Freizeit",betrag:0}],
+  Trading:      [{id:601,name:"Volume Trader",betrag:0}],
+  Sparen:       [{id:701,name:"Sparen",betrag:0},{id:702,name:"Urlaub",betrag:0},{id:703,name:"Notfall",betrag:0}],
+  Sonstiges:    [],
+};
+const INIT_BUDGETS = { Wohnen:0,Lebensmittel:0,Auto:0,Software:0,Freizeit:0,Trading:0,Sparen:0,Sonstiges:0 };
+const INIT_ZIELE = [
+  { id:1, name:"Notfallfonds", ziel:0, aktuell:0, farbe:"#22c55e", icon:"🛡️" },
+  { id:2, name:"Urlaub",       ziel:0, aktuell:0, farbe:"#f59e0b", icon:"✈️" },
+  { id:3, name:"Anschaffung",  ziel:0, aktuell:0, farbe:"#6366f1", icon:"🎯" },
+];
+const INIT_VERLAUF = MONATE.map(m=>({monat:m,einnahmen:0,ausgaben:0}));
+const AVATARE = ['💰','📊','💎','🚀','🏦','💳','🪙','📈','🐋','🦁','🐯','👑'];
+
+const fmt  = n => new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"}).format(n);
+const fmtK = n => n>=1000?`${(n/1000).toFixed(1)}k`:String(Math.round(n));
+const monWert = (b,f) => f==="monatlich"?b:f==="einmalig"?b:f==="quartalsweise"?b/3:f==="jährlich"?b/12:b;
+
+// ─── Auth Helpers ─────────────────────────────────────────────────────────────
+async function hashPasswort(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+const ladeProfile = () => { try { return JSON.parse(localStorage.getItem('pw_profile')||'[]'); } catch { return []; } };
+const speichereProfile = p => localStorage.setItem('pw_profile', JSON.stringify(p));
+const ladeProfilDaten = id => { try { return JSON.parse(localStorage.getItem(`pw_data_${id}`)||'null'); } catch { return null; } };
+const speichereProfilDaten = (id,d) => localStorage.setItem(`pw_data_${id}`, JSON.stringify(d));
+
+// ─── CountUp Hook ─────────────────────────────────────────────────────────────
+function useCountUp(target, duration=600) {
+  const [val,setVal] = useState(target);
+  const prev = useRef(target);
+  useEffect(()=>{
+    const start=prev.current, diff=target-start, startTime=Date.now();
+    if(Math.abs(diff)<0.5){setVal(target);prev.current=target;return;}
+    const tick=()=>{
+      const p=Math.min(1,(Date.now()-startTime)/duration);
+      const ease=1-Math.pow(1-p,3);
+      setVal(start+diff*ease);
+      if(p<1)requestAnimationFrame(tick);
+      else{setVal(target);prev.current=target;}
+    };
+    requestAnimationFrame(tick);
+  },[target,duration]);
+  return val;
+}
+
+// ─── Balance Ring ─────────────────────────────────────────────────────────────
+function BalanceRing({verfuegbar, einnahmen, ausgaben}) {
+  const animVal = useCountUp(verfuegbar);
+  const pct = einnahmen>0?Math.min(1,Math.max(0,ausgaben/einnahmen)):0;
+  const R=64, CIRC=2*Math.PI*R;
+  const filled=CIRC*(1-pct);
+  const pos = verfuegbar>=0;
+  const col = pos?"#6366f1":"#f87171";
+  return (
+    <div className="circle-container" style={{padding:"20px 0"}}>
+      <svg width={160} height={160} style={{transform:"rotate(-90deg)"}}>
+        <circle cx={80} cy={80} r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={10}/>
+        <circle cx={80} cy={80} r={R} fill="none" stroke={col} strokeWidth={10}
+          strokeDasharray={CIRC} strokeDashoffset={CIRC-filled} strokeLinecap="round"
+          style={{transition:"stroke-dashoffset 0.8s ease, stroke 0.5s"}}/>
+      </svg>
+      <div style={{position:"absolute",textAlign:"center"}}>
+        <div style={{fontSize:11,color:pos?"rgba(255,255,255,0.35)":"#f87171",marginBottom:2,fontWeight:pos?400:700}}>
+          {pos?"Verfügbar":"Minus"}
+        </div>
+        <div style={{fontSize:26,fontWeight:900,color:col,letterSpacing:"-0.03em",fontVariantNumeric:"tabular-nums",lineHeight:1}}>
+          {!pos&&<span style={{fontSize:22}}>−</span>}{Math.round(Math.abs(animVal)).toLocaleString("de-DE")}
+        </div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>EUR</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Inline Edit Item ─────────────────────────────────────────────────────────
+function InlineItem({icon, color, name, betrag, onDel, onUpdName, onUpdBetrag, suffix}) {
+  return (
+    <div className="list-item">
+      <div className="badge" style={{background:`${color}18`}}><span>{icon}</span></div>
+      <input
+        className="inp" value={name} onChange={e=>onUpdName(e.target.value)}
+        style={{flex:1,padding:"6px 8px",fontSize:14,fontWeight:600,background:"transparent",border:"none",borderBottom:"1px solid rgba(255,255,255,0.06)",borderRadius:0}}
+        placeholder="Bezeichnung"/>
+      <input
+        className="num-inp" type="number" value={betrag||""} placeholder="0"
+        onChange={e=>onUpdBetrag(e.target.value)}
+        style={{color:color}}/>
+      {suffix&&<span style={{fontSize:11,color:"rgba(255,255,255,0.25)",width:30}}>{suffix}</span>}
+      <button className="delete-btn" onClick={onDel}>×</button>
+    </div>
+  );
+}
+
+// ─── Cockpit Tab ──────────────────────────────────────────────────────────────
+function CockpitTab({einnahmen,ausgaben,budgets,gesamtEin,gesamtAus,verfuegbar,sparrate,netWorth,
+  onAddEin,onDelEin,onUpdEin,onAddAus,onDelAus,onUpdAus,onSetBudget,kryptoGesamtwert,sparGuthaben}) {
+  const [openKat,setOpenKat] = useState(null);
+  const [showAddEin,setShowAddEin] = useState(false);
+  const [showAddAus,setShowAddAus] = useState(false);
+  const [newEinName,setNewEinName] = useState("");
+  const [newEinBetrag,setNewEinBetrag] = useState("");
+  const [newEinFreq,setNewEinFreq] = useState("monatlich");
+  const [newAusKat,setNewAusKat] = useState("Sonstiges");
+  const [newAusName,setNewAusName] = useState("");
+  const [newAusBetrag,setNewAusBetrag] = useState("");
+  const [showEin,setShowEin] = useState(true);
+  const [showAus,setShowAus] = useState(true);
+
+  const katSummen = AUSGABEN_KAT.map(k=>({...k,summe:(ausgaben[k.name]||[]).reduce((s,x)=>s+(parseFloat(x.betrag)||0),0)})).filter(k=>k.summe>0).sort((a,b)=>b.summe-a.summe);
+
+  const addEin=()=>{
+    if(!newEinName.trim())return;
+    onAddEin({name:newEinName,betrag:parseFloat(newEinBetrag)||0,freq:newEinFreq});
+    setNewEinName("");setNewEinBetrag("");setNewEinFreq("monatlich");setShowAddEin(false);
+  };
+  const addAus=()=>{
+    if(!newAusName.trim())return;
+    onAddAus(newAusKat,newAusName,parseFloat(newAusBetrag)||0);
+    setNewAusName("");setNewAusBetrag("");setShowAddAus(false);
+  };
+
+  const stats=[
+    {label:"Einnahmen",v:gesamtEin,c:"#4ade80",icon:"↑"},
+    {label:"Ausgaben", v:gesamtAus,c:"#f87171",icon:"↓"},
+    {label:"Net Worth",v:netWorth, c:"#fcd34d",icon:"◆"},
+  ];
+
+  return (
+    <div className="fade-in">
+      {/* Balance Ring */}
+      <div className="card" style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <BalanceRing verfuegbar={verfuegbar} einnahmen={gesamtEin} ausgaben={gesamtAus}/>
+        <div style={{display:"flex",gap:8,width:"100%",marginTop:8}}>
+          {stats.map(s=>(
+            <div key={s.label} className="stat-card">
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginBottom:3}}>{s.icon} {s.label}</div>
+              <div style={{fontSize:14,fontWeight:800,color:s.c,fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{fmt(s.v)}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:12,marginTop:12,width:"100%",justifyContent:"center"}}>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.25)"}}>Sparrate</div>
+            <div style={{fontSize:18,fontWeight:900,color:sparrate>30?"#4ade80":sparrate>10?"#f59e0b":"#f87171"}}>{sparrate}%</div>
+          </div>
+          <div style={{width:1,background:"rgba(255,255,255,0.07)"}}/>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.25)"}}>Krypto</div>
+            <div style={{fontSize:18,fontWeight:900,color:"#f59e0b",fontVariantNumeric:"tabular-nums"}}>{fmt(kryptoGesamtwert)}</div>
+          </div>
+          <div style={{width:1,background:"rgba(255,255,255,0.07)"}}/>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.25)"}}>Rücklagen</div>
+            <div style={{fontSize:18,fontWeight:900,color:"#a5b4fc",fontVariantNumeric:"tabular-nums"}}>{fmt(sparGuthaben)}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Einnahmen */}
+      <div className="card">
+        <div className="card-title">
+          <span>💚 Einnahmen</span>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <span style={{fontSize:13,fontWeight:800,color:"#4ade80",fontVariantNumeric:"tabular-nums"}}>{fmt(gesamtEin)}</span>
+            <button className="collapsible-toggle" onClick={()=>setShowEin(v=>!v)}>{showEin?"−":"+"}</button>
+          </div>
+        </div>
+        {showEin&&<>
+          {einnahmen.map(e=>(
+            <div key={e.id} className="list-item">
+              <div className="badge" style={{background:"rgba(34,197,94,0.12)",color:"#4ade80",fontSize:12}}>€</div>
+              <input className="inp" value={e.name} onChange={ev=>onUpdEin(e.id,"name",ev.target.value)}
+                style={{flex:1,padding:"5px 8px",fontSize:14,fontWeight:600,background:"transparent",border:"none",borderBottom:"1px solid rgba(255,255,255,0.06)",borderRadius:0}}
+                placeholder="Bezeichnung"/>
+              <input className="num-inp" type="number" value={e.betrag||""} placeholder="0"
+                onChange={ev=>onUpdEin(e.id,"betrag",ev.target.value)} style={{color:"#4ade80"}}/>
+              <select value={e.freq} onChange={ev=>onUpdEin(e.id,"freq",ev.target.value)}
+                style={{background:"transparent",border:"none",color:"rgba(255,255,255,0.3)",fontSize:11,outline:"none",cursor:"pointer"}}>
+                {FREQ_OPTIONEN.map(f=><option key={f.id} value={f.id}>{f.short}</option>)}
+              </select>
+              <button className="delete-btn" onClick={()=>onDelEin(e.id)}>×</button>
+            </div>
+          ))}
+          <button onClick={()=>setShowAddEin(true)}
+            style={{width:"100%",marginTop:8,padding:"10px",background:"rgba(34,197,94,0.07)",border:"1px dashed rgba(34,197,94,0.2)",borderRadius:10,color:"#4ade80",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+            + Einnahme hinzufügen
+          </button>
+        </>}
+      </div>
+
+      {/* Ausgaben */}
+      <div className="card">
+        <div className="card-title">
+          <span>🔴 Ausgaben</span>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <span style={{fontSize:13,fontWeight:800,color:"#f87171",fontVariantNumeric:"tabular-nums"}}>{fmt(gesamtAus)}</span>
+            <button className="collapsible-toggle" onClick={()=>setShowAus(v=>!v)}>{showAus?"−":"+"}</button>
+          </div>
+        </div>
+        {showAus&&<>
+          {AUSGABEN_KAT.map(kat=>{
+            const items = ausgaben[kat.name]||[];
+            const summe = items.reduce((s,x)=>s+(parseFloat(x.betrag)||0),0);
+            const budget = parseFloat(budgets[kat.name])||0;
+            const ueber = budget>0&&summe>budget;
+            const isOpen = openKat===kat.name;
+            return (
+              <div key={kat.name} style={{marginBottom:8}}>
+                <button onClick={()=>setOpenKat(isOpen?null:kat.name)}
+                  style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:isOpen?`${kat.farbe}10`:"rgba(255,255,255,0.03)",border:`1px solid ${isOpen?kat.farbe+"30":"rgba(255,255,255,0.06)"}`,borderRadius:12,cursor:"pointer",transition:"all 0.2s"}}>
+                  <span style={{fontSize:20}}>{kat.icon}</span>
+                  <span style={{flex:1,fontSize:14,fontWeight:700,color:"#fff",textAlign:"left"}}>{kat.name}</span>
+                  {budget>0&&<div className="progress-bar-bg" style={{width:50,height:4,display:"inline-block"}}>
+                    <div className="progress-bar-fill" style={{width:`${Math.min(100,(summe/budget)*100)}%`,background:ueber?"#f87171":kat.farbe}}/>
+                  </div>}
+                  <span style={{fontSize:13,fontWeight:800,color:ueber?"#f87171":kat.farbe,fontVariantNumeric:"tabular-nums"}}>{fmt(summe)}</span>
+                  <span style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>{isOpen?"▲":"▼"}</span>
+                </button>
+                {isOpen&&(
+                  <div style={{paddingLeft:8,marginTop:4}}>
+                    {items.map(item=>(
+                      <InlineItem key={item.id} icon={kat.icon} color={kat.farbe}
+                        name={item.name} betrag={item.betrag}
+                        onUpdName={v=>onUpdAus(kat.name,item.id,"name",v)}
+                        onUpdBetrag={v=>onUpdAus(kat.name,item.id,"betrag",v)}
+                        onDel={()=>onDelAus(kat.name,item.id)}/>
+                    ))}
+                    <div style={{display:"flex",gap:8,padding:"8px 16px",alignItems:"center"}}>
+                      <span style={{fontSize:11,color:"rgba(255,255,255,0.3)",whiteSpace:"nowrap"}}>Budget:</span>
+                      <input type="number" className="num-inp" placeholder="0"
+                        value={budgets[kat.name]||""} onChange={e=>onSetBudget(kat.name,e.target.value)}
+                        style={{width:70,color:kat.farbe,border:"1px solid rgba(255,255,255,0.08)",borderRadius:6,padding:"3px 6px",background:"rgba(255,255,255,0.03)"}}/>
+                      <button onClick={()=>{setNewAusKat(kat.name);setShowAddAus(true);}}
+                        style={{marginLeft:"auto",padding:"6px 12px",background:`${kat.farbe}18`,border:`1px dashed ${kat.farbe}40`,borderRadius:8,color:kat.farbe,fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                        + Hinzufügen
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <button onClick={()=>setShowAddAus(true)}
+            style={{width:"100%",marginTop:4,padding:"10px",background:"rgba(239,68,68,0.06)",border:"1px dashed rgba(239,68,68,0.2)",borderRadius:10,color:"#f87171",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+            + Ausgabe hinzufügen
+          </button>
+        </>}
+      </div>
+
+      {/* Modals */}
+      {showAddEin&&(
+        <div className="modal-overlay" onClick={()=>setShowAddEin(false)}>
+          <div className="modal-sheet slide-up" onClick={e=>e.stopPropagation()}>
+            <div className="modal-handle"/>
+            <div style={{fontSize:16,fontWeight:800,marginBottom:16}}>Einnahme hinzufügen</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <input className="inp" placeholder="Bezeichnung" value={newEinName} onChange={e=>setNewEinName(e.target.value)}/>
+              <input className="inp" type="number" placeholder="Betrag (€)" value={newEinBetrag} onChange={e=>setNewEinBetrag(e.target.value)}/>
+              <select className="inp" value={newEinFreq} onChange={e=>setNewEinFreq(e.target.value)}>
+                {FREQ_OPTIONEN.map(f=><option key={f.id} value={f.id}>{f.label}</option>)}
+              </select>
+              <button className="btn-primary" onClick={addEin} style={{marginTop:8}}>Hinzufügen</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showAddAus&&(
+        <div className="modal-overlay" onClick={()=>setShowAddAus(false)}>
+          <div className="modal-sheet slide-up" onClick={e=>e.stopPropagation()}>
+            <div className="modal-handle"/>
+            <div style={{fontSize:16,fontWeight:800,marginBottom:16}}>Ausgabe hinzufügen</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <select className="inp" value={newAusKat} onChange={e=>setNewAusKat(e.target.value)}>
+                {AUSGABEN_KAT.map(k=><option key={k.name} value={k.name}>{k.icon} {k.name}</option>)}
+              </select>
+              <input className="inp" placeholder="Bezeichnung" value={newAusName} onChange={e=>setNewAusName(e.target.value)}/>
+              <input className="inp" type="number" placeholder="Betrag (€)" value={newAusBetrag} onChange={e=>setNewAusBetrag(e.target.value)}/>
+              <button className="btn-primary" onClick={addAus} style={{marginTop:8}}>Hinzufügen</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Goals Tab ────────────────────────────────────────────────────────────────
+function GoalsTab({ziele,onAddZiel,onDelZiel,onUpdZiel,gesamtEin,gesamtAus,ausgaben}) {
+  const [showAdd,setShowAdd] = useState(false);
+  const [newName,setNewName] = useState("");
+  const [newZiel,setNewZiel] = useState("");
+  const [newIcon,setNewIcon] = useState("🎯");
+  const ICONS=["🎯","🛡️","✈️","🏠","🚗","💎","📱","🎓","💍","🌍","🏋️","🐾"];
+  const verfuegbar=Math.max(0,gesamtEin-gesamtAus);
+  const sparGuthaben=ziele.reduce((s,z)=>s+(parseFloat(z.aktuell)||0),0);
+
+  const addZiel=()=>{
+    if(!newName.trim())return;
+    onAddZiel({id:Date.now(),name:newName,ziel:parseFloat(newZiel)||0,aktuell:0,farbe:"#6366f1",icon:newIcon});
+    setNewName("");setNewZiel("");setShowAdd(false);
+  };
+
+  // Stundenlohn-Panel
+  const topAusgaben=AUSGABEN_KAT.flatMap(k=>(ausgaben[k.name]||[]).map(x=>({...x,farbe:k.farbe,icon:k.icon}))).filter(x=>parseFloat(x.betrag)>0).sort((a,b)=>b.betrag-a.betrag).slice(0,6);
+  const stundenSatz=gesamtEin>0?(gesamtEin/(4.3*40)):0;
+  const monateVoll=verfuegbar>0?Math.ceil(sparGuthaben/verfuegbar):"-";
+
+  return (
+    <div className="fade-in">
+      {/* Sparziele */}
+      <div className="card">
+        <div className="card-title">
+          <span>🎯 Sparziele</span>
+          <span style={{fontSize:13,fontWeight:800,color:"#a5b4fc",fontVariantNumeric:"tabular-nums"}}>{fmt(sparGuthaben)}</span>
+        </div>
+        {ziele.map(z=>{
+          const pct=z.ziel>0?Math.min(100,(parseFloat(z.aktuell)||0)/(parseFloat(z.ziel)||1)*100):0;
+          const monate=verfuegbar>0&&z.ziel>z.aktuell?Math.ceil((z.ziel-z.aktuell)/verfuegbar):0;
+          return (
+            <div key={z.id} style={{marginBottom:16}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <span style={{fontSize:22}}>{z.icon}</span>
+                <input className="inp" value={z.name} onChange={e=>onUpdZiel(z.id,"name",e.target.value)}
+                  style={{flex:1,padding:"4px 8px",fontSize:14,fontWeight:700,background:"transparent",border:"none",borderBottom:"1px solid rgba(255,255,255,0.06)",borderRadius:0}}/>
+                <button className="delete-btn" onClick={()=>onDelZiel(z.id)}>×</button>
+              </div>
+              <div style={{display:"flex",gap:8,marginBottom:8}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginBottom:3}}>Aktuell</div>
+                  <input type="number" className="inp" value={z.aktuell||""} placeholder="0" onChange={e=>onUpdZiel(z.id,"aktuell",e.target.value)}
+                    style={{padding:"7px 10px",fontSize:15,fontWeight:700,color:"#a5b4fc"}}/>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginBottom:3}}>Ziel</div>
+                  <input type="number" className="inp" value={z.ziel||""} placeholder="0" onChange={e=>onUpdZiel(z.id,"ziel",e.target.value)}
+                    style={{padding:"7px 10px",fontSize:15,fontWeight:700,color:z.farbe}}/>
+                </div>
+              </div>
+              <div className="progress-bar-bg">
+                <div className="progress-bar-fill" style={{width:`${pct}%`,background:z.farbe}}/>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",marginTop:5,fontSize:11,color:"rgba(255,255,255,0.3)"}}>
+                <span style={{color:z.farbe,fontWeight:700}}>{pct.toFixed(0)}%</span>
+                {monate>0&&<span>~{monate} Mon. bis Ziel</span>}
+              </div>
+            </div>
+          );
+        })}
+        <button onClick={()=>setShowAdd(true)}
+          style={{width:"100%",padding:"10px",background:"rgba(99,102,241,0.07)",border:"1px dashed rgba(99,102,241,0.25)",borderRadius:10,color:"#a5b4fc",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+          + Neues Ziel
+        </button>
+      </div>
+
+      {/* Stundenlohn */}
+      <div className="card">
+        <div className="card-title">⏱ Stundenlohn-Analyse</div>
+        <div style={{display:"flex",gap:10,marginBottom:12}}>
+          <div className="stat-card">
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Stundensatz</div>
+            <div style={{fontSize:20,fontWeight:900,color:"#f59e0b",fontVariantNumeric:"tabular-nums"}}>{fmt(stundenSatz)}</div>
+          </div>
+          <div className="stat-card">
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Noch {typeof monateVoll==="number"?`${monateVoll} Mon.`:"–"}</div>
+            <div style={{fontSize:20,fontWeight:900,color:"#a5b4fc",fontVariantNumeric:"tabular-nums"}}>{fmt(sparGuthaben)}</div>
+          </div>
+        </div>
+        {topAusgaben.length>0&&<>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginBottom:8}}>Top Ausgaben in Arbeitsstunden:</div>
+          {topAusgaben.map(a=>{
+            const stunden=stundenSatz>0?(parseFloat(a.betrag)||0)/stundenSatz:0;
+            return (
+              <div key={a.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <span style={{fontSize:14}}>{a.icon}</span>
+                <span style={{flex:1,fontSize:13,color:"rgba(255,255,255,0.7)"}}>{a.name}</span>
+                <span style={{fontSize:12,color:a.farbe,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>{fmt(a.betrag)}</span>
+                <span style={{fontSize:11,color:"rgba(255,255,255,0.3)",width:50,textAlign:"right"}}>{stunden.toFixed(1)}h</span>
+              </div>
+            );
+          })}
+        </>}
+      </div>
+
+      {showAdd&&(
+        <div className="modal-overlay" onClick={()=>setShowAdd(false)}>
+          <div className="modal-sheet slide-up" onClick={e=>e.stopPropagation()}>
+            <div className="modal-handle"/>
+            <div style={{fontSize:16,fontWeight:800,marginBottom:16}}>Neues Sparziel</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
+              {ICONS.map(ic=>(
+                <button key={ic} onClick={()=>setNewIcon(ic)}
+                  style={{fontSize:22,padding:"8px",background:newIcon===ic?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.04)",border:`1px solid ${newIcon===ic?"#6366f1":"rgba(255,255,255,0.08)"}`,borderRadius:10,cursor:"pointer"}}>
+                  {ic}
+                </button>
+              ))}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <input className="inp" placeholder="Name des Ziels" value={newName} onChange={e=>setNewName(e.target.value)}/>
+              <input className="inp" type="number" placeholder="Zielbetrag (€)" value={newZiel} onChange={e=>setNewZiel(e.target.value)}/>
+              <button className="btn-primary" onClick={addZiel} style={{marginTop:8}}>Hinzufügen</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Analyse Tab ──────────────────────────────────────────────────────────────
+function AnalyseTab({ausgaben,einnahmen,gesamtEin,gesamtAus,verlauf}) {
+  const [aktPanel,setAktPanel] = useState("monat");
+  const PANELS=[
+    {id:"monat",label:"Monat"},
+    {id:"jahr",label:"Jahreskosten"},
+    {id:"fixvar",label:"Fix vs. Variabel"},
+    {id:"heat",label:"Heatmap"},
+  ];
+
+  const gesamtJahr=gesamtAus*12;
+  const katSummen=AUSGABEN_KAT.map(k=>({...k,summe:(ausgaben[k.name]||[]).reduce((s,x)=>s+(parseFloat(x.betrag)||0),0)})).sort((a,b)=>b.summe-a.summe);
+  const maxMonat=Math.max(...verlauf.map(v=>Math.max(v.einnahmen,v.ausgaben)),1);
+
+  // Fix vs Variabel
+  const FIX_KAT=["Wohnen","Software","Trading"];
+  const VAR_KAT=["Lebensmittel","Auto","Freizeit","Sparen","Sonstiges"];
+  const fixWert=AUSGABEN_KAT.filter(k=>FIX_KAT.includes(k.name)).reduce((s,k)=>s+(ausgaben[k.name]||[]).reduce((ss,x)=>ss+(parseFloat(x.betrag)||0),0),0);
+  const varWert=AUSGABEN_KAT.filter(k=>VAR_KAT.includes(k.name)).reduce((s,k)=>s+(ausgaben[k.name]||[]).reduce((ss,x)=>ss+(parseFloat(x.betrag)||0),0),0);
+  const sparkwert=Math.max(0,gesamtEin-gesamtAus);
+  const ratios=[
+    {label:"Fix",wert:fixWert,farbe:"#6366f1"},
+    {label:"Variabel",wert:varWert,farbe:"#f59e0b"},
+    {label:"Sparbetrag",wert:sparkwert,farbe:"#22c55e"},
+  ];
+  const total=fixWert+varWert+sparkwert||1;
+
+  // Heatmap
+  const heatMax=Math.max(...verlauf.map(v=>v.ausgaben),1);
+
+  return (
+    <div className="fade-in">
+      {/* Panel Selector */}
+      <div style={{display:"flex",gap:6,padding:"8px 12px",overflowX:"auto"}}>
+        {PANELS.map(p=>(
+          <button key={p.id} onClick={()=>setAktPanel(p.id)}
+            style={{padding:"7px 14px",borderRadius:20,background:aktPanel===p.id?"#6366f1":"rgba(255,255,255,0.06)",border:"none",color:aktPanel===p.id?"#fff":"rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",transition:"all 0.2s"}}>
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {aktPanel==="monat"&&(
+        <div className="card" style={{marginTop:8}}>
+          <div className="card-title">📅 Monatsverlauf</div>
+          <div style={{display:"flex",alignItems:"flex-end",gap:4,height:120,padding:"8px 0"}}>
+            {verlauf.map((v,i)=>{
+              const einH=(v.einnahmen/maxMonat)*100;
+              const ausH=(v.ausgaben/maxMonat)*100;
+              return (
+                <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,height:"100%",justifyContent:"flex-end"}}>
+                  <div style={{display:"flex",gap:1,alignItems:"flex-end",height:"100%"}}>
+                    <div style={{width:4,height:`${einH}%`,background:"#4ade8060",borderRadius:"2px 2px 0 0",minHeight:2}}/>
+                    <div style={{width:4,height:`${ausH}%`,background:"#f8717160",borderRadius:"2px 2px 0 0",minHeight:2}}/>
+                  </div>
+                  <div style={{fontSize:8,color:"rgba(255,255,255,0.3)",textAlign:"center"}}>{v.monat}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{display:"flex",gap:16,justifyContent:"center",marginTop:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:"rgba(255,255,255,0.5)"}}>
+              <div style={{width:8,height:8,borderRadius:2,background:"#4ade80"}}/>Einnahmen
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:"rgba(255,255,255,0.5)"}}>
+              <div style={{width:8,height:8,borderRadius:2,background:"#f87171"}}/>Ausgaben
+            </div>
+          </div>
+        </div>
+      )}
+
+      {aktPanel==="jahr"&&(
+        <div className="card" style={{marginTop:8}}>
+          <div className="card-title">
+            <span>📆 Jahreskosten</span>
+            <span style={{fontSize:13,fontWeight:800,color:"#f87171",fontVariantNumeric:"tabular-nums"}}>{fmt(gesamtJahr)}</span>
+          </div>
+          {katSummen.filter(k=>k.summe>0).map(k=>(
+            <div key={k.name} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+              <span style={{fontSize:20,width:28}}>{k.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                  <span style={{fontSize:13,fontWeight:600}}>{k.name}</span>
+                  <span style={{fontSize:13,fontWeight:800,color:k.farbe,fontVariantNumeric:"tabular-nums"}}>{fmt(k.summe*12)}</span>
+                </div>
+                <div className="progress-bar-bg">
+                  <div className="progress-bar-fill" style={{width:`${(k.summe*12/gesamtJahr)*100}%`,background:k.farbe}}/>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {aktPanel==="fixvar"&&(
+        <div className="card" style={{marginTop:8}}>
+          <div className="card-title">📊 Fix vs. Variabel</div>
+          <div style={{height:24,borderRadius:12,overflow:"hidden",display:"flex",marginBottom:16}}>
+            {ratios.map(r=>(
+              <div key={r.label} style={{width:`${(r.wert/total)*100}%`,background:r.farbe,transition:"width 0.6s",minWidth:r.wert>0?4:0}}/>
+            ))}
+          </div>
+          {ratios.map(r=>(
+            <div key={r.label} style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+              <div style={{width:12,height:12,borderRadius:4,background:r.farbe,flexShrink:0}}/>
+              <span style={{flex:1,fontSize:14,fontWeight:600}}>{r.label}</span>
+              <span style={{fontSize:13,fontWeight:800,color:r.farbe,fontVariantNumeric:"tabular-nums"}}>{fmt(r.wert)}</span>
+              <span style={{fontSize:11,color:"rgba(255,255,255,0.3)",width:36,textAlign:"right"}}>{((r.wert/total)*100).toFixed(0)}%</span>
+            </div>
+          ))}
+          <div style={{height:1,background:"rgba(255,255,255,0.07)",margin:"12px 0"}}/>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",lineHeight:1.6}}>
+            Fix: {["Wohnen","Software","Trading"].join(", ")}<br/>
+            Variabel: {["Lebensmittel","Auto","Freizeit","Sonstiges"].join(", ")}
+          </div>
+        </div>
+      )}
+
+      {aktPanel==="heat"&&(
+        <div className="card" style={{marginTop:8}}>
+          <div className="card-title">🌡 Heatmap Ausgaben</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+            {verlauf.map((v,i)=>{
+              const pct=v.ausgaben/heatMax;
+              const alpha=0.15+pct*0.75;
+              return (
+                <div key={i} style={{background:`rgba(239,68,68,${alpha})`,borderRadius:10,padding:"10px 8px",textAlign:"center",border:"1px solid rgba(255,255,255,0.04)"}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:3}}>{v.monat}</div>
+                  <div style={{fontSize:13,fontWeight:800,color:pct>0.6?"#f87171":"rgba(255,255,255,0.8)",fontVariantNumeric:"tabular-nums"}}>
+                    {v.ausgaben>0?`${fmtK(v.ausgaben)}€`:"–"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{marginTop:14,fontSize:12,color:"rgba(255,255,255,0.3)",textAlign:"center"}}>
+            Aktuell {fmt(gesamtAus)}/Monat · {fmt(gesamtAus*12)}/Jahr
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Krypto Tab ───────────────────────────────────────────────────────────────
+function KryptoTab({holdings,onAdd,onDel,onUpd,kryptoPreise,onPreisUpdate}) {
+  const [showAdd,setShowAdd] = useState(false);
+  const [newCoin,setNewCoin] = useState(COIN_LIST[0].id);
+  const [newMenge,setNewMenge] = useState("");
+  const [loading,setLoading] = useState(false);
+
+  const gesamtWert=holdings.reduce((s,h)=>{
+    const preis=kryptoPreise[h.coinId]?.eur||0;
+    return s+(parseFloat(h.menge)||0)*preis;
+  },0);
+
+  const refresh=async()=>{
+    if(!holdings.length||loading)return;
+    setLoading(true);
+    const ids=holdings.map(h=>h.coinId).join(",");
+    try {
+      const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=eur&include_24hr_change=true`);
+      const data=await r.json();
+      onPreisUpdate(data);
+    } catch(e){}
+    setLoading(false);
+  };
+
+  useEffect(()=>{
+    if(holdings.length>0)refresh();
+  },[]);
+
+  const addHolding=()=>{
+    if(!newMenge)return;
+    const coin=COIN_LIST.find(c=>c.id===newCoin);
+    onAdd({id:Date.now(),coinId:coin.id,symbol:coin.symbol,name:coin.name,farbe:coin.farbe,icon:coin.icon,menge:parseFloat(newMenge)});
+    setNewMenge("");setShowAdd(false);
+  };
+
+  // Donut chart data
+  const donutData=holdings.map(h=>({
+    ...h,
+    wert:(kryptoPreise[h.coinId]?.eur||0)*(parseFloat(h.menge)||0)
+  })).filter(h=>h.wert>0).sort((a,b)=>b.wert-a.wert);
+  let cumPct=0;
+  const segments=donutData.map(h=>{
+    const pct=gesamtWert>0?(h.wert/gesamtWert)*100:0;
+    const start=cumPct; cumPct+=pct;
+    return {...h,pct,start};
+  });
+
+  return (
+    <div className="fade-in">
+      <div className="card">
+        <div className="card-title">
+          <span>₿ Krypto Portfolio</span>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <button onClick={refresh} disabled={loading}
+              style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:8,color:"#f59e0b",fontSize:12,padding:"4px 10px",cursor:loading?"not-allowed":"pointer",fontWeight:700}}>
+              {loading?"⟳":"↻"} Kurse
+            </button>
+          </div>
+        </div>
+
+        {/* Gesamtwert */}
+        <div style={{textAlign:"center",marginBottom:16,padding:"8px 0"}}>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginBottom:4}}>Portfolio-Wert</div>
+          <div style={{fontSize:32,fontWeight:900,color:"#f59e0b",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.03em"}}>{fmt(gesamtWert)}</div>
+        </div>
+
+        {/* Donut */}
+        {segments.length>0&&(
+          <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:16}}>
+            <svg viewBox="0 0 36 36" width={80} height={80} style={{transform:"rotate(-90deg)",flexShrink:0}}>
+              {segments.map((s,i)=>{
+                const R2=15.9155, circ=2*Math.PI*R2;
+                const dash=(s.pct/100)*circ, gap=circ-dash;
+                const offset=(1-s.start/100)*circ;
+                return <circle key={i} cx="18" cy="18" r={R2} fill="none" stroke={s.farbe} strokeWidth="3.5"
+                  strokeDasharray={`${dash} ${gap}`} strokeDashoffset={offset}/>;
+              })}
+            </svg>
+            <div style={{flex:1,display:"flex",flexDirection:"column",gap:4}}>
+              {segments.slice(0,4).map(s=>(
+                <div key={s.id} style={{display:"flex",alignItems:"center",gap:6}}>
+                  <div style={{width:8,height:8,borderRadius:2,background:s.farbe,flexShrink:0}}/>
+                  <span style={{fontSize:12,color:"rgba(255,255,255,0.7)",flex:1}}>{s.symbol}</span>
+                  <span style={{fontSize:11,color:s.farbe,fontWeight:700}}>{s.pct.toFixed(0)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Holdings */}
+        {holdings.length===0?(
+          <div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>
+            Noch keine Coins hinzugefügt
+          </div>
+        ):(
+          holdings.map(h=>{
+            const coin=COIN_LIST.find(c=>c.id===h.coinId)||{farbe:"#94a3b8",icon:"?",symbol:h.symbol||"?"};
+            const preis=kryptoPreise[h.coinId]?.eur||0;
+            const change=kryptoPreise[h.coinId]?.eur_24h_change||0;
+            const wert=preis*(parseFloat(h.menge)||0);
+            return (
+              <div key={h.id} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 0",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
+                <div style={{width:36,height:36,borderRadius:10,background:`${coin.farbe}20`,border:`1px solid ${coin.farbe}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>
+                  {coin.icon}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:700}}>{h.symbol||coin.symbol}</div>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>
+                    {preis>0?(preis>=1?fmt(preis):`${preis.toFixed(6)} €`):"Kein Kurs"}
+                    {change!==0&&<span style={{marginLeft:6,color:change>0?"#4ade80":"#f87171",fontWeight:700}}>{change>0?"+":""}{change.toFixed(1)}%</span>}
+                  </div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <input type="number" value={h.menge||""} placeholder="0" onChange={e=>onUpd(h.id,"menge",e.target.value)}
+                    className="num-inp" style={{color:coin.farbe,width:70,textAlign:"right",fontSize:14}}/>
+                  {preis>0&&<div style={{fontSize:11,color:"rgba(255,255,255,0.4)",fontVariantNumeric:"tabular-nums",marginTop:2}}>{fmt(wert)}</div>}
+                </div>
+                <button className="delete-btn" onClick={()=>onDel(h.id)}>×</button>
+              </div>
+            );
+          })
+        )}
+        <button onClick={()=>setShowAdd(true)}
+          style={{width:"100%",marginTop:12,padding:"10px",background:"rgba(245,158,11,0.07)",border:"1px dashed rgba(245,158,11,0.25)",borderRadius:10,color:"#f59e0b",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+          + Coin hinzufügen
+        </button>
+      </div>
+
+      {showAdd&&(
+        <div className="modal-overlay" onClick={()=>setShowAdd(false)}>
+          <div className="modal-sheet slide-up" onClick={e=>e.stopPropagation()}>
+            <div className="modal-handle"/>
+            <div style={{fontSize:16,fontWeight:800,marginBottom:16}}>Coin hinzufügen</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <select className="inp" value={newCoin} onChange={e=>setNewCoin(e.target.value)}>
+                {COIN_LIST.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name} ({c.symbol})</option>)}
+              </select>
+              <input className="inp" type="number" placeholder="Menge" value={newMenge} onChange={e=>setNewMenge(e.target.value)} step="any"/>
+              <button className="btn-primary" onClick={addHolding} style={{marginTop:8}}>Hinzufügen</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Sync Panel ───────────────────────────────────────────────────────────────
+function SyncPanel({onClose,sbUrl,sbKey,syncStatus,syncMsg,onSave,onLoad,onDisconnect}) {
+  const [urlIn,setUrlIn] = useState(sbUrl);
+  const [keyIn,setKeyIn] = useState(sbKey);
+  const syncFarbe=syncStatus==="ok"?"#22c55e":syncStatus==="error"?"#f87171":"#f59e0b";
+  const syncLabel=syncStatus==="ok"?"✓ Verbunden":syncStatus==="error"?"✗ Fehler":syncStatus==="saving"?"↑ Speichern…":syncStatus==="loading"?"↓ Laden…":"☁ Nicht konfiguriert";
+
+  const SQL=`CREATE TABLE finanzen (
+  id integer PRIMARY KEY DEFAULT 1,
+  einnahmen text,
+  ausgaben text,
+  budgets text,
+  ziele text,
+  krypto_holdings text,
+  updated_at timestamptz DEFAULT now()
+);
+
+INSERT INTO finanzen (id) VALUES (1);
+
+ALTER TABLE finanzen ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_access" ON finanzen FOR ALL USING (true) WITH CHECK (true);`;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-sheet slide-up" onClick={e=>e.stopPropagation()} style={{maxHeight:"88vh"}}>
+        <div className="modal-handle"/>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+          <div style={{fontSize:24}}>☁</div>
+          <div>
+            <div style={{fontSize:16,fontWeight:800}}>Supabase Sync</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>Kostenlos · Echtzeit · Geräteübergreifend</div>
+          </div>
+          <div style={{marginLeft:"auto"}}>
+            <div className="chip" style={{borderColor:`${syncFarbe}40`,color:syncFarbe,background:`${syncFarbe}10`}}>
+              {syncLabel}
+            </div>
+          </div>
+        </div>
+        {syncMsg&&<div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginBottom:12}}>{syncMsg}</div>}
+
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",lineHeight:1.8,marginBottom:16}}>
+          <b style={{color:"#fff"}}>1.</b> <a href="https://supabase.com" target="_blank" rel="noreferrer" style={{color:"#3ecf8e"}}>supabase.com</a> → Kostenlosen Account erstellen<br/>
+          <b style={{color:"#fff"}}>2.</b> Neues Projekt → SQL Editor → Query ausführen:<br/>
+        </div>
+        <div style={{background:"rgba(0,0,0,0.4)",border:"1px solid rgba(62,207,142,0.2)",borderRadius:10,padding:"10px 12px",fontFamily:"monospace",fontSize:10,color:"#3ecf8e",lineHeight:1.7,marginBottom:16,overflowX:"auto",whiteSpace:"pre"}}>
+          {SQL}
+        </div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",lineHeight:1.8,marginBottom:12}}>
+          <b style={{color:"#fff"}}>3.</b> Settings → API → URL und anon/public Key kopieren:
+        </div>
+
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:16}}>
+          <input className="inp" placeholder="https://xxx.supabase.co" value={urlIn} onChange={e=>setUrlIn(e.target.value)}/>
+          <input className="inp" placeholder="anon / public key" value={keyIn} onChange={e=>setKeyIn(e.target.value)}/>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <button className="btn-primary" style={{flex:1}} onClick={()=>onSave(urlIn.trim().replace(/\/$/,""),keyIn.trim())}>
+            Verbinden & Laden
+          </button>
+          {sbUrl&&<>
+            <button className="btn-ghost" onClick={()=>onLoad()}>↓ Laden</button>
+            <button className="btn-ghost" style={{color:"#f87171",borderColor:"rgba(239,68,68,0.2)"}} onClick={onDisconnect}>Trennen</button>
+          </>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Haupt Finance App ────────────────────────────────────────────────────────
+function FinanzApp({profil,gespeicherteDaten,onDatenSpeichern,onLogout}) {
+  const gd = gespeicherteDaten||{};
+  const [einnahmen,setEinnahmen] = useState(gd.einnahmen||INIT_EINNAHMEN);
+  const [ausgaben,setAusgaben]   = useState(gd.ausgaben||INIT_AUSGABEN);
+  const [budgets,setBudgets]     = useState(gd.budgets||INIT_BUDGETS);
+  const [ziele,setZiele]         = useState(gd.ziele||INIT_ZIELE);
+  const [kryptoHoldings,setKryptoHoldings] = useState(gd.kryptoHoldings||[]);
+  const [kryptoPreise,setKryptoPreise]     = useState({});
+  const [verlauf]                = useState(gd.verlauf||INIT_VERLAUF);
+  const [aktTab,setAktTab]       = useState("cockpit");
+  const [showSync,setShowSync]   = useState(false);
+  const [showProfil,setShowProfil] = useState(false);
+
+  // Supabase state
+  const [sbUrl,setSbUrl] = useState(()=>localStorage.getItem("pw_sb_url")||"");
+  const [sbKey,setSbKey] = useState(()=>localStorage.getItem("pw_sb_key")||"");
+  const [syncStatus,setSyncStatus] = useState("idle");
+  const [syncMsg,setSyncMsg]       = useState("");
+  const saveTimer = useRef(null);
+
+  const sbHeaders = k => ({"Content-Type":"application/json","apikey":k,"Authorization":`Bearer ${k}`,"Prefer":"resolution=merge-duplicates"});
+  const getSnapshot = (ovr={}) => ({
+    id:1,
+    einnahmen:       JSON.stringify(ovr.einnahmen??einnahmen),
+    ausgaben:        JSON.stringify(ovr.ausgaben??ausgaben),
+    budgets:         JSON.stringify(ovr.budgets??budgets),
+    ziele:           JSON.stringify(ovr.ziele??ziele),
+    krypto_holdings: JSON.stringify(ovr.kryptoHoldings??kryptoHoldings),
+    updated_at:      new Date().toISOString(),
+  });
+
+  const syncSave = async snap=>{
+    if(!sbUrl||!sbKey)return;
+    setSyncStatus("saving");
+    try {
+      const r=await fetch(`${sbUrl}/rest/v1/finanzen`,{method:"POST",headers:{...sbHeaders(sbKey),"Prefer":"resolution=merge-duplicates"},body:JSON.stringify(snap)});
+      if(!r.ok)throw new Error(await r.text());
+      setSyncStatus("ok"); setSyncMsg("Gespeichert "+new Date().toLocaleTimeString("de-DE"));
+    } catch(e) {setSyncStatus("error");setSyncMsg(e.message?.slice(0,40)||"Fehler");}
+  };
+
+  const syncLoad = async (url=sbUrl,key=sbKey)=>{
+    if(!url||!key)return;
+    setSyncStatus("loading");
+    try {
+      const r=await fetch(`${url}/rest/v1/finanzen?id=eq.1`,{headers:sbHeaders(key)});
+      if(!r.ok)throw new Error(await r.text());
+      const rows=await r.json();
+      if(!rows||rows.length===0){setSyncStatus("ok");setSyncMsg("Neu – noch keine Daten");return;}
+      const d=rows[0];
+      if(d.einnahmen)       setEinnahmen(JSON.parse(d.einnahmen));
+      if(d.ausgaben)        setAusgaben(JSON.parse(d.ausgaben));
+      if(d.budgets)         setBudgets(JSON.parse(d.budgets));
+      if(d.ziele)           setZiele(JSON.parse(d.ziele));
+      if(d.krypto_holdings) setKryptoHoldings(JSON.parse(d.krypto_holdings));
+      setSyncStatus("ok"); setSyncMsg("Geladen "+new Date().toLocaleTimeString("de-DE"));
+    } catch(e) {setSyncStatus("error");setSyncMsg(e.message?.slice(0,40)||"Fehler");}
+  };
+
+  const triggerSave = useCallback((ovr={})=>{
+    const snap={
+      einnahmen:ovr.einnahmen??einnahmen,ausgaben:ovr.ausgaben??ausgaben,
+      budgets:ovr.budgets??budgets,ziele:ovr.ziele??ziele,kryptoHoldings:ovr.kryptoHoldings??kryptoHoldings,
+    };
+    onDatenSpeichern?.(snap);
+    if(!sbUrl||!sbKey)return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current=setTimeout(()=>syncSave(getSnapshot(ovr)),2000);
+  },[einnahmen,ausgaben,budgets,ziele,kryptoHoldings,sbUrl,sbKey]);
+
+  useEffect(()=>{if(sbUrl&&sbKey)syncLoad();},[sbUrl,sbKey]);
+
+  const connectSupabase=(url,key)=>{
+    localStorage.setItem("pw_sb_url",url);
+    localStorage.setItem("pw_sb_key",key);
+    setSbUrl(url);setSbKey(key);setShowSync(false);
+    if(url&&key)setTimeout(()=>syncLoad(url,key),300);
+  };
+  const disconnectSupabase=()=>{
+    ["pw_sb_url","pw_sb_key"].forEach(k=>localStorage.removeItem(k));
+    setSbUrl("");setSbKey("");setSyncStatus("idle");setSyncMsg("");setShowSync(false);
+  };
+
+  // Wrapped setters mit auto-save
+  const setEin=fn=>{setEinnahmen(p=>{const n=typeof fn==="function"?fn(p):fn;triggerSave({einnahmen:n});return n;});};
+  const setAus=fn=>{setAusgaben(p=>{const n=typeof fn==="function"?fn(p):fn;triggerSave({ausgaben:n});return n;});};
+  const setBud=fn=>{setBudgets(p=>{const n=typeof fn==="function"?fn(p):fn;triggerSave({budgets:n});return n;});};
+  const setZie=fn=>{setZiele(p=>{const n=typeof fn==="function"?fn(p):fn;triggerSave({ziele:n});return n;});};
+  const setKry=fn=>{setKryptoHoldings(p=>{const n=typeof fn==="function"?fn(p):fn;triggerSave({kryptoHoldings:n});return n;});};
+
+  const gesamtEin=einnahmen.reduce((s,e)=>s+monWert(parseFloat(e.betrag)||0,e.freq),0);
+  const gesamtAus=AUSGABEN_KAT.reduce((s,k)=>s+(ausgaben[k.name]||[]).reduce((ss,x)=>ss+(parseFloat(x.betrag)||0),0),0);
+  const verfuegbar=gesamtEin-gesamtAus;
+  const sparrate=gesamtEin>0?Math.max(0,Math.round((verfuegbar/gesamtEin)*100)):0;
+  const kryptoGesamtwert=kryptoHoldings.reduce((s,h)=>{
+    const p=kryptoPreise[h.coinId]?.eur||0;
+    return s+p*(parseFloat(h.menge)||0);
+  },0);
+  const sparGuthaben=ziele.reduce((s,z)=>s+(parseFloat(z.aktuell)||0),0);
+  const netWorth=kryptoGesamtwert+sparGuthaben+Math.max(0,verfuegbar);
+
+  const TABS=[
+    {id:"cockpit",label:"Cockpit",icon:"⌘"},
+    {id:"ziele",  label:"Ziele",  icon:"🎯"},
+    {id:"analyse",label:"Analyse",icon:"📊"},
+    {id:"krypto", label:"Krypto", icon:"₿"},
+  ];
+
+  const syncColor=syncStatus==="ok"?"#22c55e":syncStatus==="error"?"#f87171":syncStatus==="saving"||syncStatus==="loading"?"#f59e0b":"rgba(255,255,255,0.2)";
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",height:"100%",background:"#07070f"}}>
+      {/* Header */}
+      <div className="header">
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:30,height:30,borderRadius:9,background:"linear-gradient(135deg,#6366f1,#a5b4fc)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>💰</div>
+          <div>
+            <div style={{fontSize:13,fontWeight:800,letterSpacing:"-0.02em"}}>Pocketwatcher</div>
+            <div style={{fontSize:9,color:"rgba(255,255,255,0.25)"}}>mobile v2.0</div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          {/* Sync Status Dot */}
+          <button onClick={()=>setShowSync(true)}
+            style={{display:"flex",alignItems:"center",gap:5,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:20,padding:"5px 10px",cursor:"pointer"}}>
+            <div style={{width:7,height:7,borderRadius:"50%",background:syncColor,transition:"background 0.3s"}}/>
+            <span style={{fontSize:11,color:"rgba(255,255,255,0.4)",fontWeight:600}}>{sbUrl?"Sync":"☁ Setup"}</span>
+          </button>
+          {/* Profil */}
+          {profil&&(
+            <button onClick={()=>setShowProfil(v=>!v)}
+              style={{width:32,height:32,borderRadius:10,background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.25)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              {profil.avatar}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Profil Dropdown */}
+      {showProfil&&(
+        <div style={{background:"rgba(13,13,28,0.98)",borderBottom:"1px solid rgba(255,255,255,0.07)",padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:24}}>{profil.avatar}</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700}}>{profil.name}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>{sbUrl?"☁ Cloud Sync aktiv":"Nur lokal gespeichert"}</div>
+          </div>
+          <button className="btn-ghost" onClick={onLogout} style={{color:"#f87171",borderColor:"rgba(239,68,68,0.2)"}}>Abmelden</button>
+        </div>
+      )}
+
+      {/* Tab Content */}
+      <div className="tab-content">
+        {aktTab==="cockpit"&&(
+          <CockpitTab
+            einnahmen={einnahmen} ausgaben={ausgaben} budgets={budgets}
+            gesamtEin={gesamtEin} gesamtAus={gesamtAus} verfuegbar={verfuegbar}
+            sparrate={sparrate} netWorth={netWorth}
+            kryptoGesamtwert={kryptoGesamtwert} sparGuthaben={sparGuthaben}
+            onAddEin={e=>setEin(p=>[...p,{id:Date.now(),...e}])}
+            onDelEin={id=>setEin(p=>p.filter(e=>e.id!==id))}
+            onUpdEin={(id,f,v)=>setEin(p=>p.map(e=>e.id===id?{...e,[f]:v}:e))}
+            onAddAus={(k,n,b)=>setAus(d=>({...d,[k]:[...(d[k]||[]),{id:Date.now(),name:n,betrag:b}]}))}
+            onDelAus={(k,id)=>setAus(d=>({...d,[k]:d[k].filter(x=>x.id!==id)}))}
+            onUpdAus={(k,id,f,v)=>setAus(d=>({...d,[k]:d[k].map(x=>x.id===id?{...x,[f]:v}:x)}))}
+            onSetBudget={(k,v)=>setBud(b=>({...b,[k]:v}))}
+          />
+        )}
+        {aktTab==="ziele"&&(
+          <GoalsTab
+            ziele={ziele} gesamtEin={gesamtEin} gesamtAus={gesamtAus} ausgaben={ausgaben}
+            onAddZiel={z=>setZie(p=>[...p,z])}
+            onDelZiel={id=>setZie(p=>p.filter(z=>z.id!==id))}
+            onUpdZiel={(id,f,v)=>setZie(p=>p.map(z=>z.id===id?{...z,[f]:v}:z))}
+          />
+        )}
+        {aktTab==="analyse"&&(
+          <AnalyseTab ausgaben={ausgaben} einnahmen={einnahmen} gesamtEin={gesamtEin} gesamtAus={gesamtAus} verlauf={verlauf}/>
+        )}
+        {aktTab==="krypto"&&(
+          <KryptoTab
+            holdings={kryptoHoldings} kryptoPreise={kryptoPreise}
+            onAdd={h=>setKry(p=>[...p,h])}
+            onDel={id=>setKry(p=>p.filter(h=>h.id!==id))}
+            onUpd={(id,f,v)=>setKry(p=>p.map(h=>h.id===id?{...h,[f]:v}:h))}
+            onPreisUpdate={data=>setKryptoPreise(p=>({...p,...data}))}
+          />
+        )}
+      </div>
+
+      {/* Bottom Nav */}
+      <nav className="bottom-nav">
+        {TABS.map(t=>(
+          <button key={t.id} className={`bottom-nav-btn no-select ${aktTab===t.id?"active":""}`} onClick={()=>setAktTab(t.id)}>
+            <span className="nav-icon">{t.icon}</span>
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* Sync Modal */}
+      {showSync&&(
+        <SyncPanel
+          onClose={()=>setShowSync(false)}
+          sbUrl={sbUrl} sbKey={sbKey}
+          syncStatus={syncStatus} syncMsg={syncMsg}
+          onSave={connectSupabase}
+          onLoad={()=>syncLoad()}
+          onDisconnect={disconnectSupabase}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Login / Profil Screen ────────────────────────────────────────────────────
+function ProfilScreen({onLogin}) {
+  const [profile,setProfile] = useState(ladeProfile);
+  const [ansicht,setAnsicht] = useState("auswahl");
+  const [gewProf,setGewProf] = useState(null);
+  const [pwEin,setPwEin]     = useState("");
+  const [fehler,setFehler]   = useState("");
+  const [laden,setLaden]     = useState(false);
+  const [neuerName,setNeuerName]     = useState("");
+  const [neuesPw,setNeuesPw]         = useState("");
+  const [neuesPw2,setNeuesPw2]       = useState("");
+  const [neuerAvatar,setNeuerAvatar] = useState("💰");
+
+  const login=async()=>{
+    if(!pwEin){setFehler("Bitte Passwort eingeben");return;}
+    setLaden(true);setFehler("");
+    const hash=await hashPasswort(pwEin);
+    if(hash===gewProf.passwortHash){
+      onLogin(gewProf, ladeProfilDaten(gewProf.id));
+    } else {
+      setFehler("Falsches Passwort");setLaden(false);
+    }
+  };
+
+  const neuesProfil=async()=>{
+    if(!neuerName.trim()){setFehler("Bitte Name eingeben");return;}
+    if(neuesPw.length<4){setFehler("Passwort mindestens 4 Zeichen");return;}
+    if(neuesPw!==neuesPw2){setFehler("Passwörter stimmen nicht überein");return;}
+    setLaden(true);setFehler("");
+    const hash=await hashPasswort(neuesPw);
+    const neu={id:Date.now().toString(),name:neuerName.trim(),avatar:neuerAvatar,passwortHash:hash};
+    const updated=[...profile,neu];
+    speichereProfile(updated);setProfile(updated);
+    onLogin(neu,null);
+  };
+
+  const delProfil=(id,e)=>{
+    e.stopPropagation();
+    if(!confirm("Profil und alle Daten löschen?"))return;
+    const updated=profile.filter(p=>p.id!==id);
+    localStorage.removeItem(`pw_data_${id}`);
+    speichereProfile(updated);setProfile(updated);
+  };
+
+  if(ansicht==="login"&&gewProf) return (
+    <div style={{display:"flex",flexDirection:"column",height:"100%",alignItems:"center",justifyContent:"center",padding:24,background:"#07070f"}}>
+      <div style={{width:"100%",maxWidth:380}}>
+        <button onClick={()=>{setAnsicht("auswahl");setPwEin("");setFehler("");}}
+          style={{background:"transparent",border:"none",color:"rgba(255,255,255,0.4)",fontSize:14,cursor:"pointer",marginBottom:24}}>← Zurück</button>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{fontSize:56,marginBottom:12}}>{gewProf.avatar}</div>
+          <div style={{fontSize:22,fontWeight:800}}>{gewProf.name}</div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.3)",marginTop:4}}>Bitte Passwort eingeben</div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <input className="inp" type="password" placeholder="Passwort" value={pwEin}
+            onChange={e=>setPwEin(e.target.value)} onKeyDown={e=>e.key==="Enter"&&login()}
+            autoFocus style={{textAlign:"center",fontSize:18,letterSpacing:"0.15em"}}/>
+          {fehler&&<div style={{color:"#f87171",fontSize:13,textAlign:"center"}}>{fehler}</div>}
+          <button className="btn-primary" onClick={login} disabled={laden} style={{fontSize:16,padding:"14px"}}>
+            {laden?"...":"Anmelden"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if(ansicht==="neu") return (
+    <div style={{display:"flex",flexDirection:"column",height:"100%",alignItems:"center",justifyContent:"center",padding:24,background:"#07070f",overflowY:"auto"}}>
+      <div style={{width:"100%",maxWidth:380}}>
+        <button onClick={()=>{setAnsicht("auswahl");setFehler("");}}
+          style={{background:"transparent",border:"none",color:"rgba(255,255,255,0.4)",fontSize:14,cursor:"pointer",marginBottom:24}}>← Zurück</button>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontSize:48,marginBottom:8}}>{neuerAvatar}</div>
+          <div style={{fontSize:20,fontWeight:800}}>Neues Profil erstellen</div>
+        </div>
+        {/* Avatar Picker */}
+        <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center",marginBottom:20}}>
+          {AVATARE.map(a=>(
+            <button key={a} onClick={()=>setNeuerAvatar(a)}
+              style={{fontSize:26,width:48,height:48,borderRadius:12,background:neuerAvatar===a?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:`1px solid ${neuerAvatar===a?"#6366f1":"rgba(255,255,255,0.08)"}`,cursor:"pointer"}}>
+              {a}
+            </button>
+          ))}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <input className="inp" placeholder="Dein Name" value={neuerName} onChange={e=>setNeuerName(e.target.value)}/>
+          <input className="inp" type="password" placeholder="Passwort (min. 4 Zeichen)" value={neuesPw} onChange={e=>setNeuesPw(e.target.value)}/>
+          <input className="inp" type="password" placeholder="Passwort wiederholen" value={neuesPw2} onChange={e=>setNeuesPw2(e.target.value)}/>
+          {fehler&&<div style={{color:"#f87171",fontSize:13,textAlign:"center"}}>{fehler}</div>}
+          <button className="btn-primary" onClick={neuesProfil} disabled={laden} style={{fontSize:16,padding:"14px",marginTop:8}}>
+            {laden?"...":"Profil erstellen"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",height:"100%",background:"#07070f",overflowY:"auto"}}>
+      <div style={{padding:"calc(40px + env(safe-area-inset-top)) 24px 24px",textAlign:"center"}}>
+        <div style={{fontSize:40,marginBottom:12}}>💰</div>
+        <div style={{fontSize:28,fontWeight:900,letterSpacing:"-0.03em",marginBottom:6}}>Pocketwatcher</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.35)"}}>Dein persönlicher Finanz-Tracker</div>
+      </div>
+
+      <div style={{flex:1,padding:"0 20px"}}>
+        {profile.length>0&&<>
+          <div className="section-header">Profil wählen</div>
+          {profile.map(p=>(
+            <div key={p.id} onClick={()=>{setGewProf(p);setAnsicht("login");setPwEin("");setFehler("");}}
+              style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,marginBottom:10,cursor:"pointer",transition:"all 0.2s",active:{background:"rgba(99,102,241,0.1)"}}}>
+              <div style={{fontSize:32}}>{p.avatar}</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:16,fontWeight:700}}>{p.name}</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>Tippen zum Anmelden</div>
+              </div>
+              <button onClick={e=>delProfil(p.id,e)}
+                style={{background:"transparent",border:"none",color:"rgba(255,100,100,0.3)",fontSize:20,cursor:"pointer",padding:"4px"}}>×</button>
+            </div>
+          ))}
+        </>}
+
+        <button onClick={()=>{setAnsicht("neu");setFehler("");}}
+          style={{width:"100%",padding:"16px",background:"rgba(99,102,241,0.08)",border:"1px dashed rgba(99,102,241,0.3)",borderRadius:14,color:"#a5b4fc",fontSize:15,fontWeight:700,cursor:"pointer",marginTop:profile.length?8:0,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          <span style={{fontSize:20}}>+</span> Neues Profil erstellen
+        </button>
+      </div>
+
+      <div style={{padding:"20px 24px calc(20px + env(safe-area-inset-bottom))",textAlign:"center",color:"rgba(255,255,255,0.12)",fontSize:11}}>
+        Daten werden lokal + optional in Supabase gespeichert
+      </div>
+    </div>
+  );
+}
+
+// ─── App Root ─────────────────────────────────────────────────────────────────
+function App() {
+  const [profil,setProfil]     = useState(null);
+  const [daten,setDaten]       = useState(null);
+
+  const handleLogin=(p,d)=>{setProfil(p);setDaten(d);};
+  const handleLogout=()=>{setProfil(null);setDaten(null);};
+  const handleSave=d=>{
+    if(profil)speichereProfilDaten(profil.id,d);
+  };
+
+  if(!profil) return <ProfilScreen onLogin={handleLogin}/>;
+  return <FinanzApp profil={profil} gespeicherteDaten={daten} onDatenSpeichern={handleSave} onLogout={handleLogout}/>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
